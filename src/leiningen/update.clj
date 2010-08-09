@@ -1,30 +1,10 @@
 (ns leiningen.update
   "lein update checks for newer versions of currently used dependencies and aks the user if they should be updated to the latest stable."
-  (:use (clojure.contrib duck-streams seq-utils str-utils)
-	[leiningen.add :only [latest-stable add-artifact find-clojar good-read-line update-dependency-list]]
-	[leiningen.search :only [read-clj]]
-	[leiningen.update-repo :only [compare-versions]]))
+  (:use lein-search.util))
 
-
-(defn update-artifact [project dep-type artifact new-version]
-  (update-dependency-list project dep-type
-                          (fn [deps]
-                            (for [[a v] deps]
-                              [a (if (= a (symbol artifact))
-                               new-version
-                               v)]))))
-
-(defn yes-or-no-prompt [question]
-  (print question " (y/n) ")
-  (flush)
-  (let [r (chomp (good-read-line))]
-    (cond
-     (= r "y") true
-     (= r "n") false
-     :else (recur question))))
 
 (defn ask-for-update [artifact version new-version]
-  (yes-or-no-prompt (str "You are currently using "artifact" in version "version". Do you want to update to "new-version"?")))
+  (yes-or-no-prompt (str "You are currently using "artifact" version "version". Do you want to update to "new-version"?")))
 
 (defn find-updates [[artifact version]]
   (let [res (first (find-clojar (str artifact)))
@@ -34,17 +14,15 @@
       [artifact version nil])))
 
 (defn update [project & args]
-  (let [project-clj-path (str (:root project) "/project.clj")
-        maybe-add-updates
+  (let [maybe-add-updates
         (fn [dep-type initial]
           (reduce (fn [p [artifact version new-version]]
                     (if (and new-version (ask-for-update artifact version new-version))
                       (update-artifact p dep-type (str artifact) new-version)
                       p))
                   initial
-                  (map find-updates (dep-type project))))
-	updated-project (->> (read-clj project-clj-path)
-                             (maybe-add-updates :dependencies)
-                             (maybe-add-updates :dev-dependencies))]
-    (with-out-writer project-clj-path
-      (pr updated-project))))
+                  (map find-updates (dep-type project))))]
+    (write-project-clj project
+                       (->> (read-project-clj project)
+                            (maybe-add-updates :dependencies)
+                            (maybe-add-updates :dev-dependencies)))))
