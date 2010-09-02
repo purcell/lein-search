@@ -1,5 +1,5 @@
 (defproject org.clojars.sanityinc/lein-search
-  "0.3.2-SNAPSHOT"
+  "0.3.3-SNAPSHOT"
   :description "Leiningen plugin to search and add dependencies from clojars"
   :dependencies [[org.clojure/clojure "[1.1,1.2.0-master-SNAPSHOT]"]
                  [org.clojure/clojure-contrib "[1.1,1.2.0-SNAPSHOT]"]]
